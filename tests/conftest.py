@@ -5,7 +5,7 @@ from app import create_app
 
 @pytest.fixture
 def app(tmp_path):
-    return create_app({"TESTING": True, "DATABASE": str(tmp_path / "test.db")})
+    return create_app({"TESTING": True, "APP_VERSION": "9.9.9-test", "DATABASE": str(tmp_path / "test.db")})
 
 
 @pytest.fixture

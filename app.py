@@ -1,6 +1,7 @@
 """ACEest Fitness & Gym - Flask web application."""
 
 import os
+import socket
 import sqlite3
 from datetime import date
 
@@ -10,10 +11,25 @@ from fitness import db
 from fitness.calculations import calculate_bmi, estimate_calories, validate_adherence
 from fitness.programs import PROGRAMS, get_program, list_programs
 
+VERSION_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "VERSION")
+
+
+def read_version():
+    """APP_VERSION env var wins (set per image / per K8s deployment), then the VERSION file."""
+    env_version = os.environ.get("APP_VERSION", "").strip()
+    if env_version:
+        return env_version
+    try:
+        with open(VERSION_FILE, encoding="utf-8") as fh:
+            return fh.read().strip() or "unknown"
+    except OSError:
+        return "unknown"
+
 
 def create_app(test_config=None):
     app = Flask(__name__)
     app.config.from_mapping(
+        APP_VERSION=read_version(),
         DATABASE=os.environ.get("ACEEST_DB", os.path.join(app.instance_path, "aceest.db")),
     )
     if test_config:
@@ -39,11 +55,16 @@ def client_exists(conn, name):
 def register_routes(app):
     @app.get("/")
     def home():
-        return render_template("index.html", programs=PROGRAMS)
+        return render_template("index.html", programs=PROGRAMS, version=app.config["APP_VERSION"])
 
     @app.get("/health")
     def health():
-        return jsonify({"status": "ok"})
+        return jsonify({"status": "ok", "version": app.config["APP_VERSION"]})
+
+    @app.get("/version")
+    def version():
+        # hostname = pod name in Kubernetes, so canary / blue-green traffic splits are visible
+        return jsonify({"version": app.config["APP_VERSION"], "hostname": socket.gethostname()})
 
     # ---------- Programs ----------
     @app.get("/api/programs")

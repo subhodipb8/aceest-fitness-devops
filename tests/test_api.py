@@ -1,10 +1,39 @@
 from datetime import date, timedelta
 
+from app import VERSION_FILE, read_version
+
 
 def test_health(client):
     resp = client.get("/health")
     assert resp.status_code == 200
-    assert resp.get_json() == {"status": "ok"}
+    assert resp.get_json() == {"status": "ok", "version": "9.9.9-test"}
+
+
+def test_version_endpoint(client):
+    data = client.get("/version").get_json()
+    assert data["version"] == "9.9.9-test"
+    assert data["hostname"]
+
+
+def test_home_page_shows_version(client):
+    assert b"version 9.9.9-test" in client.get("/").data
+
+
+def test_version_from_env_overrides_file(monkeypatch):
+    monkeypatch.setenv("APP_VERSION", "2.0.0")
+    assert read_version() == "2.0.0"
+
+
+def test_version_falls_back_to_file(monkeypatch):
+    monkeypatch.delenv("APP_VERSION", raising=False)
+    with open(VERSION_FILE, encoding="utf-8") as fh:
+        assert read_version() == fh.read().strip()
+
+
+def test_version_unknown_when_file_missing(monkeypatch, tmp_path):
+    monkeypatch.delenv("APP_VERSION", raising=False)
+    monkeypatch.setattr("app.VERSION_FILE", str(tmp_path / "missing"))
+    assert read_version() == "unknown"
 
 
 def test_home_page_lists_programs(client):

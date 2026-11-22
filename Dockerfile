@@ -27,10 +27,13 @@ CMD ["pytest", "--cov=fitness", "--cov=app", "--cov-report=term-missing"]
 # ---------- runtime: small, non-root production image (default target) ----------
 FROM base AS runtime
 COPY --from=deps /install /usr/local
-COPY app.py .
+COPY app.py VERSION ./
 COPY fitness/ fitness/
 COPY templates/ templates/
 RUN mkdir -p /app/instance && chown -R appuser:appuser /app
+# Optional override at build time: docker build --build-arg APP_VERSION=2.0.0 .
+ARG APP_VERSION=""
+ENV APP_VERSION=${APP_VERSION}
 USER appuser
 EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

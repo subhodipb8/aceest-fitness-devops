@@ -43,7 +43,7 @@ pip install -r requirements-dev.txt
 python app.py
 ```
 
-Open http://localhost:5000. The SQLite database is created in `instance/aceest.db`; set `ACEEST_DB` to use another path.
+Open http://localhost:5000. The app version comes from the `APP_VERSION` environment variable, falling back to the `VERSION` file (`docker build --build-arg APP_VERSION=2.0.0 .` bakes one into an image). The SQLite database is created in `instance/aceest.db`; set `ACEEST_DB` to use another path.
 
 ## Running Tests Manually
 
@@ -55,7 +55,7 @@ pytest --cov=fitness --cov=app --cov-report=term-missing   # with coverage
 flake8 .                                            # lint
 ```
 
-The suite has 55 tests: unit tests for the pure logic in `fitness/` (calories, BMI, adherence, program lookups) and API tests that drive every endpoint through Flask's test client, including validation errors, 404s and duplicate-client 409s. Each test gets its own temporary SQLite database, so tests never touch `instance/aceest.db` or each other. Coverage is 99%.
+The suite has 60 tests: unit tests for the pure logic in `fitness/` (calories, BMI, adherence, program lookups) and API tests that drive every endpoint through Flask's test client, including validation errors, 404s and duplicate-client 409s. Each test gets its own temporary SQLite database, so tests never touch `instance/aceest.db` or each other. Coverage is 99%.
 
 ## Running with Docker
 
@@ -73,7 +73,8 @@ The Dockerfile uses `python:3.12-slim`, a multi-stage build so test tools never 
 
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/health` | Health check |
+| GET | `/health` | Health check (includes app version) |
+| GET | `/version` | App version and hostname (pod name in Kubernetes) |
 | GET | `/api/programs` | List programs |
 | GET | `/api/programs/<code>` | Program detail (`FL`, `MG`, `BG`) |
 | POST | `/api/calories` | `{"weight_kg": 70, "program": "FL"}` |
